@@ -1,6 +1,6 @@
 {
   "name": "tsame",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "the logic behind tap's t.same() and t.strictSame()",
   "main": "index.js",
   "dependencies": {
