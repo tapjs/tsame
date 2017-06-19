@@ -3,8 +3,18 @@
 module.exports = shallow
 shallow.strict = strict
 
+// TODO a future version of this that drops node 0.x support will
+// check for Symbol.iterator, and handle anything that can be passed
+// to Array.from()
+
 function isArguments (object) {
   return Object.prototype.toString.call(object) === '[object Arguments]'
+}
+
+function arrayFrom (obj) {
+  return Array.isArray(obj) ? obj
+    : Array.from ? Array.from(obj)
+    : Array.prototype.slice.call(obj)
 }
 
 function strict (a, b) {
@@ -12,117 +22,155 @@ function strict (a, b) {
 }
 
 function deeper (a, b, ca, cb) {
-  if (a === b) {
-    return true
-  } else if (typeof a !== 'object' || typeof b !== 'object') {
-    return false
-  } else if (a === null || b === null) {
-    return false
-  } else if (Buffer.isBuffer(a) && Buffer.isBuffer(b)) {
-    if (a.equals) {
-      return a.equals(b)
-    } else {
-      if (a.length !== b.length) return false
+  return a === b ? true
+    : typeof a !== 'object' || typeof b !== 'object' ? false
+    : a === null || b === null ? false
+    : Buffer.isBuffer(a) && Buffer.isBuffer(b) ? bufferSame(a, b)
+    : a instanceof Date && b instanceof Date ? a.getTime() === b.getTime()
+    : a instanceof RegExp && b instanceof RegExp ? regexpSame(a, b)
+    : isArguments(a) ?
+      isArguments(b) && deeper(arrayFrom(a), arrayFrom(b), ca, cb)
+    : isArguments(b) ? false
+    : (a.constructor !== b.constructor) ? false
+    : deeperObj(a, b, Object.keys(a), Object.keys(b), ca, cb)
+}
 
-      for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
+function deeperObj (a, b, ka, kb, ca, cb) {
+  // don't bother with stack acrobatics if there's nothing there
+  return ka.length === 0 && kb.length === 0 ? true
+    : ka.length !== kb.length ? false
+    : deeperObj_(a, b, ka, kb, ca, cb)
+}
 
-      return true
+function deeperObj_ (a, b, ka, kb, ca, cb) {
+  var ret = true
+
+  var cal = ca.length
+
+  var go = true
+  while (cal-- && go) {
+    if (ca[cal] === a) {
+      ret = cb[cal] === b
+      go = false
     }
-  } else if (a instanceof Date && b instanceof Date) {
-    return a.getTime() === b.getTime()
-  } else if (a instanceof RegExp && b instanceof RegExp) {
-    return a.source === b.source &&
-    a.global === b.global &&
-    a.multiline === b.multiline &&
-    a.lastIndex === b.lastIndex &&
-    a.ignoreCase === b.ignoreCase
-  } else if (isArguments(a) || isArguments(b)) {
-    if (!(isArguments(a) && isArguments(b))) return false
-
-    var slice = Array.prototype.slice
-    return deeper(slice.call(a), slice.call(b), ca, cb)
-  } else {
-    if (a.constructor !== b.constructor) return false
-
-    var ka = Object.keys(a)
-    var kb = Object.keys(b)
-    // don't bother with stack acrobatics if there's nothing there
-    if (ka.length === 0 && kb.length === 0) return true
-    if (ka.length !== kb.length) return false
-
-    var cal = ca.length
-    while (cal--) if (ca[cal] === a) return cb[cal] === b
-    ca.push(a); cb.push(b)
-
-    ka.sort(); kb.sort()
-    for (var j = ka.length - 1; j >= 0; j--) if (ka[j] !== kb[j]) return false
-
-    var key
-    for (var k = ka.length - 1; k >= 0; k--) {
-      key = ka[k]
-      if (!deeper(a[key], b[key], ca, cb)) return false
-    }
-
-    ca.pop(); cb.pop()
-
-    return true
   }
+
+  if (go) {
+    ca.push(a)
+    cb.push(b)
+
+    ka.sort()
+    kb.sort()
+
+    for (var j = ka.length - 1; j >= 0 && ret; j--) {
+      if (ka[j] !== kb[j])
+        ret = false
+    }
+
+    if (ret) {
+      var key
+      for (var k = ka.length - 1; k >= 0 && ret; k--) {
+        key = ka[k]
+        if (!deeper(a[key], b[key], ca, cb))
+          ret = false
+      }
+    }
+
+    if (ret) {
+      ca.pop()
+      cb.pop()
+    }
+  }
+
+  return ret
 }
 
 function shallow (a, b) {
   return shallower(a, b, [], [])
 }
 
-function shallower (a, b, ca, cb) {
-  if (typeof a !== 'object' && typeof b !== 'object' && a == b) {
-    return true
-  } else if (a === null || b === null) {
-    return a == b
-  } else if (typeof a !== 'object' || typeof b !== 'object') {
-    return false
-  } else if (Buffer.isBuffer(a) && Buffer.isBuffer(b)) {
-    if (a.equals) {
-      return a.equals(b)
-    } else {
-      if (a.length !== b.length) return false
-
-      for (var j = 0; j < a.length; j++) if (a[j] != b[j]) return false
-
-      return true
-    }
-  } else if (a instanceof Date && b instanceof Date) {
-    return a.getTime() === b.getTime()
-  } else if (a instanceof RegExp && b instanceof RegExp) {
-    return a.source === b.source &&
+function regexpSame (a, b) {
+  return a.source === b.source &&
     a.global === b.global &&
     a.multiline === b.multiline &&
     a.lastIndex === b.lastIndex &&
     a.ignoreCase === b.ignoreCase
-  } else if (isArguments(a) || isArguments(b)) {
-    var slice = Array.prototype.slice
-    return shallower(slice.call(a), slice.call(b), ca, cb)
+}
+
+function bufferSame (a, b) {
+  var ret
+  if (a.equals) {
+    ret = a.equals(b)
+  } else if (a.length !== b.length) {
+    ret = false
   } else {
-    var ka = Object.keys(a)
-    var kb = Object.keys(b)
-    // don't bother with stack acrobatics if there's nothing there
-    if (ka.length === 0 && kb.length === 0) return true
-    if (ka.length !== kb.length) return false
+    ret = true
+    for (var j = 0; j < a.length && ret; j++) {
+      if (a[j] != b[j])
+        ret = false
+    }
+  }
+  return ret
+}
 
-    var cal = ca.length
-    while (cal--) if (ca[cal] === a) return cb[cal] === b
-    ca.push(a); cb.push(b)
+function shallower (a, b, ca, cb) {
+  return typeof a !== 'object' && typeof b !== 'object' && a == b ? true
+    : a === null || b === null ? a == b
+    : typeof a !== 'object' || typeof b !== 'object' ? false
+    : Buffer.isBuffer(a) && Buffer.isBuffer(b) ? bufferSame(a, b)
+    : a instanceof Date && b instanceof Date ? a.getTime() === b.getTime()
+    : a instanceof RegExp && b instanceof RegExp ? regexpSame(a, b)
+    : isArguments(a) || isArguments(b) ?
+      shallower(arrayFrom(a), arrayFrom(b), ca, cb)
+    : shallowerObj(a, b, Object.keys(a), Object.keys(b), ca, cb)
+}
 
-    ka.sort(); kb.sort()
-    for (var k = ka.length - 1; k >= 0; k--) if (ka[k] !== kb[k]) return false
+function shallowerObj (a, b, ka, kb, ca, cb) {
+  // don't bother with stack acrobatics if there's nothing there
+  return ka.length === 0 && kb.length === 0 ? true
+    : ka.length !== kb.length ? false
+    : shallowerObj_(a, b, ka, kb, ca, cb)
+}
 
-    var key
-    for (var l = ka.length - 1; l >= 0; l--) {
-      key = ka[l]
-      if (!shallower(a[key], b[key], ca, cb)) return false
+function shallowerObj_ (a, b, ka, kb, ca, cb) {
+  var ret
+
+  var cal = ca.length
+  var go = true
+  while (cal-- && go) {
+    if (ca[cal] === a) {
+      ret = cb[cal] === b
+      go = false
+    }
+  }
+
+  if (go) {
+    ca.push(a)
+    cb.push(b)
+
+    ka.sort()
+    kb.sort()
+
+    ret = true
+    for (var k = ka.length - 1; k >= 0 && ret; k--) {
+      if (ka[k] !== kb[k])
+        ret = false
     }
 
-    ca.pop(); cb.pop()
+    if (ret) {
+      var key
+      for (var l = ka.length - 1; l >= 0 && ret; l--) {
+        key = ka[l]
+        if (!shallower(a[key], b[key], ca, cb))
+          ret = false
+      }
+    }
 
-    return true
+    if (ret) {
+      ca.pop()
+      cb.pop()
+    }
   }
+
+  return ret
 }

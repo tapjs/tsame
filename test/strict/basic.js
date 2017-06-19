@@ -144,6 +144,7 @@ test('deeper handles all the edge cases', function (t) {
     t.ok(d(outer, outer))
     t.ok(d(outer, inner))
     t.notOk(d(outer, [t]))
+    t.notOk(d([t], inner))
   }(t))
 
   // 8. objects present edge cases galore
