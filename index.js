@@ -7,6 +7,40 @@ shallow.strict = strict
 // check for Symbol.iterator, and handle anything that can be passed
 // to Array.from()
 
+var hasSet = typeof Set === 'function'
+
+function isSet (object) {
+  return hasSet && (object instanceof Set)
+}
+
+function isMap (object) {
+  return hasSet && (object instanceof Map)
+}
+
+function setSame (a, b) {
+  var ret = a.size === b.size
+  if (a.size && ret) {
+    a.forEach(function (entry) {
+      if (ret)
+        ret = b.has(entry)
+    })
+  }
+  return ret
+}
+
+function mapSame (a, b, ca, cb, fn) {
+  var ret = a.size === b.size
+  if (a.size && ret) {
+    a.forEach(function (value, key) {
+      if (ret)
+        ret = b.has(key)
+      if (ret)
+        ret = fn(value, b.get(key), ca, cb)
+    })
+  }
+  return ret
+}
+
 function isArguments (object) {
   return Object.prototype.toString.call(object) === '[object Arguments]'
 }
@@ -31,7 +65,9 @@ function deeper (a, b, ca, cb) {
     : isArguments(a) ?
       isArguments(b) && deeper(arrayFrom(a), arrayFrom(b), ca, cb)
     : isArguments(b) ? false
-    : (a.constructor !== b.constructor) ? false
+    : a.constructor !== b.constructor ? false
+    : isSet(a) && isSet(b) ? setSame(a, b)
+    : isMap(a) && isMap(b) ? mapSame(a, b, ca, cb, deeper)
     : deeperObj(a, b, Object.keys(a), Object.keys(b), ca, cb)
 }
 
@@ -122,6 +158,8 @@ function shallower (a, b, ca, cb) {
     : a instanceof RegExp && b instanceof RegExp ? regexpSame(a, b)
     : isArguments(a) || isArguments(b) ?
       shallower(arrayFrom(a), arrayFrom(b), ca, cb)
+    : isSet(a) && isSet(b) ? setSame(a, b)
+    : isMap(a) && isMap(b) ? mapSame(a, b, ca, cb, shallower)
     : shallowerObj(a, b, Object.keys(a), Object.keys(b), ca, cb)
 }
 
