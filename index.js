@@ -57,6 +57,7 @@ function strict (a, b) {
 
 function deeper (a, b, ca, cb) {
   return a === b ? true
+    : a !== a ? b !== b
     : typeof a !== 'object' || typeof b !== 'object' ? false
     : a === null || b === null ? false
     : Buffer.isBuffer(a) && Buffer.isBuffer(b) ? bufferSame(a, b)
@@ -152,6 +153,7 @@ function bufferSame (a, b) {
 function shallower (a, b, ca, cb) {
   return typeof a !== 'object' && typeof b !== 'object' && a == b ? true
     : a === null || b === null ? a == b
+    : a !== a ? b !== b
     : typeof a !== 'object' || typeof b !== 'object' ? false
     : Buffer.isBuffer(a) && Buffer.isBuffer(b) ? bufferSame(a, b)
     : a instanceof Date && b instanceof Date ? a.getTime() === b.getTime()

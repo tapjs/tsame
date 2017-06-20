@@ -33,6 +33,12 @@ var awful = {
 }
 awful.granular.self = awful
 
+test("NaN matches NaN", function (t) {
+  t.ok(d(NaN, NaN))
+  t.end()
+})
+
+
 test('deeper handles all the edge cases', function (t) {
   /*
    *
@@ -108,7 +114,6 @@ test('deeper handles all the edge cases', function (t) {
    */
 
   // 1. === does its job
-  t.notOk(d(NaN, NaN), 'NaN is the only JavaScript value not equal to itself')
   t.notOk(d(1 / 0, -1 / 0), 'opposite infinities are different')
   t.notOk(d(1, '1'), 'strict equality, no coercion between strings and numbers')
   t.notOk(d('ok', 'nok'), 'different strings are different')

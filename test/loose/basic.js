@@ -2,6 +2,11 @@ var tap = require('tap')
 var test = tap.test
 var same = require('../..')
 
+test("NaN matches NaN", function (t) {
+  t.ok(same(NaN, NaN))
+  t.end()
+})
+
 test("shouldn't care about key order and types", function (t) {
   t.ok(same({ a: 1, b: 2 }, { b: 2, a: '1' }))
   t.end()
