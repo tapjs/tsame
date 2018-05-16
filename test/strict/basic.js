@@ -57,8 +57,8 @@ test('deeper handles all the edge cases', function (t) {
   t.ok(d(functionA, functionB), 'references to the same function are equal')
 
   // 4. buffers are compared by value
-  var bufferA = new Buffer('abc')
-  var bufferB = new Buffer('abc')
+  var bufferA = Buffer.from('abc')
+  var bufferB = Buffer.from('abc')
   t.ok(d(bufferA, bufferB), 'buffers are compared by value')
 
   // 5. dates are compared by numeric (time) value
@@ -129,9 +129,9 @@ test('deeper handles all the edge cases', function (t) {
   t.notOk(d({}, null), 'null is of type object')
 
   // 4. buffers are compared by both byte length (for speed) and value
-  bufferB = new Buffer('abcd')
+  bufferB = Buffer.from('abcd')
   t.notOk(d(bufferA, bufferB), 'Buffers are checked for length')
-  bufferB = new Buffer('abd')
+  bufferB = Buffer.from('abd')
   t.notOk(d(bufferA, bufferB), 'Buffers are also checked for value')
 
   // 5. dates
