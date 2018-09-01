@@ -14,6 +14,7 @@ t.test('set', function (t) {
   t.notOk(tsame(new Set([1, 3, 5]), new Set([1, 6, 2])))
   t.ok(tsame(new Set(), new Set()))
   t.notOk(tsame(a, Array.from(a)))
+  t.ok(tsame(new Set([[1], [2]]), new Set([[2], [1]])))
   t.end()
 })
 
