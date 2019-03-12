@@ -92,6 +92,7 @@ function deeper (a, b, ca, cb) {
     : Buffer.isBuffer(a) && Buffer.isBuffer(b) ? bufferSame(a, b)
     : a instanceof Date && b instanceof Date ? a.getTime() === b.getTime()
     : a instanceof RegExp && b instanceof RegExp ? regexpSame(a, b)
+    : a instanceof Error && b instanceof Error ? errorSame(a, b)
     : isArguments(a) ?
       isArguments(b) && deeper(arrayFrom(a), arrayFrom(b), ca, cb)
     : isArguments(b) ? false
@@ -183,6 +184,12 @@ function bufferSame (a, b) {
   return ret
 }
 
+function errorSame (a, b) {
+  return a.name === b.name &&
+    a.message === b.message &&
+    a.stack === b.stack
+}
+
 function shallower (a, b, ca, cb) {
   return typeof a !== 'object' && typeof b !== 'object' && a == b ? true
     : a === null || b === null ? a == b
@@ -191,6 +198,7 @@ function shallower (a, b, ca, cb) {
     : Buffer.isBuffer(a) && Buffer.isBuffer(b) ? bufferSame(a, b)
     : a instanceof Date && b instanceof Date ? a.getTime() === b.getTime()
     : a instanceof RegExp && b instanceof RegExp ? regexpSame(a, b)
+    : a instanceof Error && b instanceof Error ? errorSame(a, b)
     : isArguments(a) || isArguments(b) ?
       shallower(arrayFrom(a), arrayFrom(b), ca, cb)
     : isSet(a) && isSet(b) ? setSame(a, b, ca, cb, shallower)

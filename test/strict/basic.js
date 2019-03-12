@@ -107,6 +107,14 @@ test('deeper handles all the edge cases', function (t) {
   t.ok(d(heinous, awful),
     'mutual recursion with otherwise identical structures fools deepEquals')
 
+  // 9. Error objects
+  var e1 = new Error('Foo')
+  var e2 = new Error('Foo')
+  // Each error has a different stack (by definition), so we must ignore that
+  e1.stack = e2.stack = ''
+
+  t.ok(d(e1, e2), 'These errors are the same')
+
   /*
    *
    * FAILURE
@@ -173,6 +181,20 @@ test('deeper handles all the edge cases', function (t) {
 
   awful.granular.stuff[2] = 2
   t.ok(d(heinous, awful), 'small changes should be fixable')
+
+  // 9. Error objects
+  var e3 = new Error('Foo Bar')
+  var e4 = new TypeError('Foo')
+  // Each error has a different stack (by definition), so we must ignore that
+  e3.stack = e4.stack = ''
+
+  var oe = { 'message': 'Foo', 'name': 'Error', 'stack': '' }
+
+  t.notOk(d(e1, null), 'Errors are non-null')
+  t.notOk(d(e1, undefined), 'Errors are defined')
+  t.notOk(d(e1, oe), 'Errors are not simple objects')
+  t.notOk(d(e1, e4), 'TypeError is an Error, but Error is not a TypeError')
+  t.notOk(d(e1, e3), 'Errors with different messages are not the same')
 
   t.end()
 })

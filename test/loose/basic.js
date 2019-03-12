@@ -44,6 +44,25 @@ test('should handle RegExps', function (t) {
   t.end()
 })
 
+test('should handle Errors', function (t) {
+  var e1 = new Error('Foo')
+  var e2 = new Error('Foo')
+  var fe = new Error('Foo Bar')
+  var te = new TypeError('Foo')
+  // Each error has a different stack (by definition), so we must ignore that
+  e1.stack = e2.stack = fe.stack = te.stack = ''
+
+  var oe = { 'message': 'Foo', 'name': 'Error', 'stack': '' }
+
+  t.notOk(same(e1, null), 'Errors are non-null')
+  t.notOk(same(e1, undefined), 'Errors are defined')
+  t.notOk(same(e1, oe), 'Errors are not simple objects')
+  t.notOk(same(e1, te), 'TypeError is an Error, but Error is not a TypeError')
+  t.notOk(same(e1, fe), 'Errors with different messages are not the same')
+  t.ok(same(e1, e2), 'These errors are the same')
+  t.end()
+})
+
 test('should handle functions', function (t) {
   var fnA = function (a) { return a }
   var fnB = function (a) { return a }
